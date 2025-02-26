@@ -1,4 +1,4 @@
-# LightningCSS Plugin Extended Named Colors
+# LightningCSS Plugin Extended Colors
 
 ## Overview
 Every get tired of CSS having such a limited set of named colors? Well not anymore!
