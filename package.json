@@ -1,0 +1,31 @@
+{
+  "name": "lightningcss-plugin-extended-named-colors",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rslib build",
+    "check": "biome check --write",
+    "dev": "rslib build --watch",
+    "format": "biome format --write",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@rslib/core": "^0.5.2",
+    "@types/node": "^22.8.1",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.7"
+  },
+  "private": true
+}
