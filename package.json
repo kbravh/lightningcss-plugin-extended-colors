@@ -1,5 +1,7 @@
 {
   "name": "lightningcss-plugin-extended-named-colors",
+  "description": "LightningCSS plugin that adds support for more named colors (Crayola, Encycolorpedia, Pantone, etc.)",
+  "author": "Karey Higuera <kbravh>",
   "version": "1.0.0",
   "type": "module",
   "exports": {
@@ -10,9 +12,7 @@
   },
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "rslib build",
     "check": "biome check --write",
@@ -24,6 +24,7 @@
     "@biomejs/biome": "^1.9.4",
     "@rslib/core": "^0.5.2",
     "@types/node": "^22.8.1",
+    "lightningcss": "^1.29.1",
     "typescript": "^5.7.3",
     "vitest": "^3.0.7"
   },

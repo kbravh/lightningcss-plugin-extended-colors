@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "lib": ["ES2021"],
+    "lib": ["ESNext"],
     "module": "ESNext",
     "noEmit": true,
     "strict": true,

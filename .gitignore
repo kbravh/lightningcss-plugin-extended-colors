@@ -15,3 +15,6 @@ dist/
 
 # windsurf rules
 .windsurfrules
+
+# Scripts for generating color lists
+scripts/

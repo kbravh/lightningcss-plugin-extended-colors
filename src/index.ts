@@ -1,69 +1,54 @@
-import { Plugin } from 'lightningcss';
-import extendedColors from './data/extended-colors.json';
+import type { Token } from 'lightningcss';
 import crayolaColors from './data/crayola.json';
+import encycolorpediaColors from './data/encycolorpedia.json';
+
+type Colorspace = 'encycolorpedia' | 'crayola';
+
+type VisitorOptions = {
+  colorspaces?: Colorspace[];
+};
+
+const colorspaceMap: Record<Colorspace, Record<string, string>> = {
+  encycolorpedia: encycolorpediaColors,
+  crayola: crayolaColors,
+};
 
 /**
- * Color source types
+ * Builds a color map from the specified colorspaces
+ * In case of color naming conflicts, later colorspaces take precedence
  */
-export enum ColorSource {
-  EXTENDED = 'extended',
-  CRAYOLA = 'crayola',
-  ALL = 'all'
+function buildColorMap(colorspaces: Colorspace[]): Record<string, string> {
+  let colorMap: Record<string, string> = {};
+
+  for (const colorspace of colorspaces) {
+    if (!Object.keys(colorspaceMap).includes(colorspace)) {
+      throw new Error(`Invalid colorspace: ${colorspace}`);
+    }
+
+    colorMap = { ...colorMap, ...colorspaceMap[colorspace] };
+  }
+
+  return colorMap;
 }
 
 /**
- * Plugin options
- */
-export interface ExtendedNamedColorsOptions {
-  /**
-   * Which color sources to include
-   * @default ColorSource.ALL
-   */
-  sources?: ColorSource | ColorSource[];
-}
-
-/**
- * Create a LightningCSS plugin that adds support for extended named colors
- * 
- * @param options Plugin options
- * @returns LightningCSS plugin
+ * Creates a LightningCSS plugin that adds support for extended named colors
  */
 export default function extendedNamedColorsPlugin(
-  options: ExtendedNamedColorsOptions = {}
-): Plugin {
-  // Default to including all color sources
-  const sources = options.sources || ColorSource.ALL;
-  
-  // Build the color map based on the selected sources
-  const colorMap: Record<string, string> = {};
-  
-  // Helper function to determine if a source should be included
-  const includeSource = (source: ColorSource): boolean => {
-    if (sources === ColorSource.ALL) return true;
-    if (Array.isArray(sources)) return sources.includes(source);
-    return sources === source;
-  };
-  
-  // Add extended colors if selected
-  if (includeSource(ColorSource.EXTENDED)) {
-    Object.entries(extendedColors).forEach(([name, value]) => {
-      colorMap[name] = value;
-    });
-  }
-  
-  // Add Crayola colors if selected
-  if (includeSource(ColorSource.CRAYOLA)) {
-    Object.entries(crayolaColors).forEach(([name, value]) => {
-      colorMap[name] = value;
-    });
-  }
-  
+  options: VisitorOptions = {},
+) {
+  // Default to encycolorpedia if no colorspaces are specified
+  const colorspaces = options.colorspaces || ['encycolorpedia'];
+  const colorMap = buildColorMap(colorspaces);
+
   return {
-    name: 'lightningcss-plugin-extended-named-colors',
-    visitor: {
-      // TODO: Implement the actual color transformation logic
-      // This will need to hook into LightningCSS's visitor API
-      // to transform named colors to their hex values
-    }
+    Token(token: Token) {
+      if (token.type === 'ident') {
+        const color = colorMap[token.value];
+        if (color) {
+          return { raw: color };
+        }
+      }
+    },
   };
 }
