@@ -1,5 +1,5 @@
 {
-  "name": "lightningcss-plugin-extended-named-colors",
+  "name": "lightningcss-plugin-extended-colors",
   "description": "LightningCSS plugin that adds support for more named colors (Crayola, Encycolorpedia, Pantone, etc.)",
   "author": "Karey Higuera <kbravh>",
   "version": "1.0.0",
