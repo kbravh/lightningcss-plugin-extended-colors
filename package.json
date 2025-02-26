@@ -24,12 +24,12 @@
     "@biomejs/biome": "^1.9.4",
     "@rslib/core": "^0.5.2",
     "@types/node": "^22.8.1",
-    "lightningcss": "^1.29.1",
     "typescript": "^5.7.3",
     "vitest": "^3.0.7"
   },
   "private": true,
   "dependencies": {
+    "lightningcss": "^1.29.1",
     "linkedom": "^0.18.9"
   }
 }
