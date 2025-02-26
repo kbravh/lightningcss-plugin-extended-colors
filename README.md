@@ -9,7 +9,7 @@ Have fun styling your pages with any color from `acajou` to `zomp`.
 Install the plugin with `npm`:
 
 ```bash
-npm install lightningcss-plugin-extended-named-colors
+npm install lightningcss-plugin-extended-colors
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ Once installed, you can include it as a [`lightningcss` plugin](https://lightnin
 
 ```ts
 import { transform, composeVisitors } from 'lightningcss';
-import extendedColorsVisitor from 'lightningcss-plugin-extended-named-colors';
+import extendedColorsVisitor from 'lightningcss-plugin-extended-colors';
 
 let res = transform({
     filename: 'test.css',
