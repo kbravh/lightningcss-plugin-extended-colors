@@ -50,3 +50,13 @@ Build the library in watch mode:
 ```bash
 npm run dev
 ```
+
+### Project Structure
+
+- `src/` - Source code for the plugin
+  - `src/data/` - Data files used by the plugin, including the extended color definitions
+  - `src/index.ts` - Main plugin entry point
+
+## Attribution
+- [Encycolorpedia](https://encycolorpedia.com/named)
+- Crayola
