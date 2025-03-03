@@ -37,6 +37,23 @@ describe('extendedNamedColorsPlugin', () => {
       '.test{color:#ffb97b;background:#7a89b8}',
     );
   });
+  it('should transform lego colors', () => {
+    const result = transform({
+      filename: 'test.css',
+      minify: true,
+      code: Buffer.from(`
+        .test {
+          color: modulexviolet;
+          background: pearlred;
+        }
+      `),
+      visitor: extendedNamedColorsPlugin({ colorspaces: ['lego'] }),
+    });
+
+    expect(result.code.toString()).toEqual(
+      '.test{color:#bd7d85;background:#d60026}',
+    );
+  });
   it('should respect the colorspace order', () => {
     const result = transform({
       filename: 'test.css',

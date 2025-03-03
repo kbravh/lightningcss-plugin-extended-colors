@@ -1,8 +1,9 @@
 import type { Token } from 'lightningcss';
 import crayolaColors from './data/crayola.json';
 import encycolorpediaColors from './data/encycolorpedia.json';
+import legoColors from './data/lego.json';
 
-type Colorspace = 'encycolorpedia' | 'crayola';
+type Colorspace = 'encycolorpedia' | 'crayola' | 'lego';
 
 type VisitorOptions = {
   colorspaces?: Colorspace[];
@@ -11,6 +12,7 @@ type VisitorOptions = {
 const colorspaceMap: Record<Colorspace, Record<string, string>> = {
   encycolorpedia: encycolorpediaColors,
   crayola: crayolaColors,
+  lego: legoColors,
 };
 
 /**
