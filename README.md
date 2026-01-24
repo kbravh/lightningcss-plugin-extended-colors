@@ -94,7 +94,7 @@ npm run dev
 
 ## Color Charts
 
-This plugin provides access to hundreds of named colors from two main sources:
+This plugin provides access to hundreds of named colors from three main sources:
 
 - [Crayola Colors](./docs/crayola-colors.md) - 169 named colors from the famous crayon manufacturer
 - [Encycolorpedia Colors](./docs/encycolorpedia-colors.md) - 1489 named colors from various sources
