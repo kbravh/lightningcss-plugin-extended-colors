@@ -72,6 +72,36 @@ assert.equal(res.code.toString(), '.foo{color:#ffb97b; background:#7a89b8}');
 
 If you pass more than one colorspace, they will be merged. In the case of color name collisions (for example, if the colorspaces `crayola` and `encycolorpedia` both contain a color named `macaroniandcheese`), the last colorspace will take precedence.
 
+### Custom Properties
+
+By default, CSS custom properties (variables) are **not** transformed. This is because custom properties can hold any value, and the plugin cannot determine whether a value is intended to be a color or something else (like an animation name or font family).
+
+```css
+:root {
+  --my-color: acajou; /* NOT transformed - stays as "acajou" */
+}
+
+.test {
+  color: acajou; /* Transformed to #4c2f27 */
+}
+```
+
+To enable transformation for custom properties, use the CSS `@property` rule to define the property with `syntax: "<color>"`:
+
+```css
+@property --my-color {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: black;
+}
+
+:root {
+  --my-color: acajou; /* Transformed to #4c2f27 */
+}
+```
+
+This approach ensures that only custom properties explicitly defined as colors will have their values transformed, while other custom properties remain unchanged.
+
 ## Contributing
 
 Build the library:
