@@ -13,7 +13,9 @@
   },
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kbravh/lightningcss-plugin-extended-colors.git"
@@ -49,12 +51,12 @@
     "lightningcss": "^1.0.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@rslib/core": "^0.5.2",
-    "@types/node": "^22.8.1",
-    "lightningcss": "^1.29.1",
-    "linkedom": "^0.18.9",
-    "typescript": "^5.7.3",
-    "vitest": "^3.0.7"
+    "@biomejs/biome": "^2.3.12",
+    "@rslib/core": "^0.19.3",
+    "@types/node": "^25.0.10",
+    "lightningcss": "^1.31.1",
+    "linkedom": "^0.18.12",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   }
 }
