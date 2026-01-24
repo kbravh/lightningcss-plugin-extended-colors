@@ -93,133 +93,42 @@ function buildColorMap(colorspaces: Colorspace[]): Record<string, string> {
 
 /**
  * Transforms extended color names in a list of tokens.
- * Returns the transformed CSS string, or null if no changes were made.
+ * Returns a modified TokenOrValue array with color idents replaced by hash tokens,
+ * or null if no changes were made.
  *
  * For unparsed declarations, LightningCSS stores values as TokenOrValue[].
  * We iterate through looking for ident tokens that match our color names,
- * and serialize everything back to a CSS string.
+ * and replace them with hash tokens. LightningCSS handles serialization.
  */
 function transformTokens(
   tokens: TokenOrValue[],
   colorMap: Record<string, string>,
-): string | null {
+): TokenOrValue[] | null {
   let hasChanges = false;
-  const parts: string[] = [];
+  const result: TokenOrValue[] = [];
 
   for (const tokenOrValue of tokens) {
     if (tokenOrValue.type === 'token') {
       const token = tokenOrValue.value;
       // Check if this ident is one of our extended color names
       if (token.type === 'ident') {
-        const color = colorMap[token.value];
-        if (color) {
-          parts.push(color);
+        const hexColor = colorMap[token.value];
+        if (hexColor) {
+          // Replace ident with hash token (remove # prefix for hash token value)
+          result.push({
+            type: 'token',
+            value: { type: 'hash', value: hexColor.slice(1) },
+          } as TokenOrValue);
           hasChanges = true;
           continue;
         }
       }
-      parts.push(tokenToString(token));
-    } else {
-      // For non-token types (url, var, function), serialize them
-      parts.push(tokenOrValueToString(tokenOrValue, colorMap));
     }
+    // Keep token unchanged - no serialization needed
+    result.push(tokenOrValue);
   }
 
-  return hasChanges ? parts.join('') : null;
-}
-
-/**
- * Converts a raw Token to its CSS string representation.
- * These are the token types that appear in unparsed declaration values.
- */
-function tokenToString(token: Record<string, unknown>): string {
-  switch (token.type) {
-    case 'ident':
-      return token.value as string;
-    case 'dimension': {
-      const dim = token.value as { value: number; unit: string };
-      return `${dim.value}${dim.unit}`;
-    }
-    case 'number':
-      return String(token.value);
-    case 'percentage':
-      return `${token.value}%`;
-    case 'hash':
-    case 'id-hash':
-      return `#${token.value}`;
-    case 'string':
-      return `"${token.value}"`;
-    case 'white-space':
-      return ' ';
-    case 'comma':
-      return ',';
-    case 'delim':
-      return token.value as string;
-    default:
-      return '';
-  }
-}
-
-/**
- * Converts a TokenOrValue to its CSS string representation.
- * Handles the structured types that can appear in values (url, var, function).
- */
-function tokenOrValueToString(
-  tov: TokenOrValue,
-  colorMap: Record<string, string>,
-): string {
-  switch (tov.type) {
-    case 'token':
-      return tokenToString(tov.value as Record<string, unknown>);
-    case 'url':
-      return `url("${(tov.value as { url: string }).url}")`;
-    case 'var': {
-      const v = tov.value as {
-        name: { ident: string };
-        fallback?: TokenOrValue[];
-      };
-      if (v.fallback && v.fallback.length > 0) {
-        const fallbackStr = v.fallback
-          .map((f) => tokenOrValueToString(f, colorMap))
-          .join('');
-        return `var(${v.name.ident}, ${fallbackStr})`;
-      }
-      return `var(${v.name.ident})`;
-    }
-    case 'function': {
-      const fn = tov.value as { name: string; arguments: TokenOrValue[] };
-      const argsStr = fn.arguments
-        .map((arg) => tokenOrValueToString(arg, colorMap))
-        .join('');
-      return `${fn.name}(${argsStr})`;
-    }
-    default:
-      // For any other types, return empty - they shouldn't appear in our context
-      return '';
-  }
-}
-
-/**
- * Creates the declaration handler for a specific property
- */
-function createPropertyHandler(
-  propertyName: string,
-  colorMap: Record<string, string>,
-) {
-  return (decl: Declaration) => {
-    // Handle unparsed declarations (when LightningCSS can't parse the value)
-    if (decl.property === 'unparsed') {
-      const transformed = transformTokens(decl.value.value, colorMap);
-      if (transformed) {
-        return {
-          property: propertyName,
-          raw: transformed,
-        };
-      }
-    }
-    // If already parsed or no changes needed, return undefined to keep original
-    return undefined;
-  };
+  return hasChanges ? result : null;
 }
 
 /**
@@ -235,47 +144,56 @@ export default function extendedNamedColorsPlugin(
   // Track custom properties defined as colors via @property
   const colorCustomProperties = new Set<string>();
 
-  // Build declaration visitors for each color property
-  const declarationVisitors: Record<
-    string,
-    | ((decl: Declaration) => { property: string; raw: string } | undefined)
-    | ((decl: CustomProperty) => { property: string; raw: string } | undefined)
-  > = {};
-
-  for (const prop of COLOR_PROPERTIES) {
-    declarationVisitors[prop] = createPropertyHandler(prop, colorMap);
-  }
-
-  // Add custom property handler for properties defined as colors via @property
-  declarationVisitors.custom = (decl: CustomProperty) => {
-    // Get the property name (e.g., "--my-color")
-    const name = typeof decl.name === 'string' ? decl.name : String(decl.name);
-
-    // Only transform if this property was defined as a color via @property
-    if (!colorCustomProperties.has(name)) {
-      return undefined;
-    }
-
-    const transformed = transformTokens(decl.value, colorMap);
-    if (transformed) {
-      return {
-        property: name,
-        raw: transformed,
-      };
+  // Handler for unparsed declarations - shared by all color properties
+  const handleUnparsedDeclaration = (decl: Declaration) => {
+    if (decl.property === 'unparsed') {
+      const transformedTokens = transformTokens(decl.value.value, colorMap);
+      if (transformedTokens) {
+        return {
+          property: 'unparsed',
+          value: {
+            propertyId: decl.value.propertyId,
+            value: transformedTokens,
+          },
+        } as Declaration;
+      }
     }
     return undefined;
   };
+
+  // Handler for custom properties defined as colors via @property
+  const handleCustomProperty = (decl: CustomProperty) => {
+    // Only transform if this property was defined as a color via @property
+    if (!colorCustomProperties.has(decl.name)) {
+      return undefined;
+    }
+
+    const transformedTokens = transformTokens(decl.value, colorMap);
+    if (transformedTokens) {
+      return {
+        property: 'custom',
+        value: {
+          name: decl.name,
+          value: transformedTokens,
+        },
+      } as Declaration;
+    }
+    return undefined;
+  };
+
+  // Build declaration visitors - all color properties share the same handler
+  const declarationVisitors: Record<string, unknown> = {};
+  for (const prop of COLOR_PROPERTIES) {
+    declarationVisitors[prop] = handleUnparsedDeclaration;
+  }
+  declarationVisitors.custom = handleCustomProperty;
 
   return {
     Rule: {
       property(rule: Rule & { type: 'property'; value: PropertyRule }) {
         // Track @property rules that define color syntax
         if (isColorPropertyRule(rule.value)) {
-          const name =
-            typeof rule.value.name === 'string'
-              ? rule.value.name
-              : String(rule.value.name);
-          colorCustomProperties.add(name);
+          colorCustomProperties.add(rule.value.name);
         }
         // Return undefined to keep the rule unchanged
         return undefined;
