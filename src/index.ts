@@ -125,7 +125,7 @@ function transformTokens(
         }
       }
     }
-    // Keep token unchanged - no serialization needed
+    // Keep token unchanged
     result.push(tokenOrValue);
   }
 
@@ -161,7 +161,7 @@ export default function extendedNamedColorsPlugin(
     return undefined;
   };
 
-  // Handler for custom properties defined as colors via @property
+  // Handler for custom properties
   const handleCustomProperty = (decl: CustomProperty) => {
     // Only transform if this property was defined as a color via @property
     if (!colorCustomProperties.has(decl.name)) {
