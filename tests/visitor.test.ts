@@ -3,6 +3,20 @@ import { describe, expect, it } from 'vitest';
 import extendedNamedColorsPlugin from '../src/index';
 
 describe('extendedNamedColorsPlugin', () => {
+  it('should throw an error for invalid colorspace', () => {
+    expect(() => {
+      transform({
+        filename: 'test.css',
+        minify: true,
+        code: Buffer.from('.test { color: red; }'),
+        // @ts-expect-error testing invalid colorspace
+        visitor: extendedNamedColorsPlugin({
+          colorspaces: ['invalid-colorspace'],
+        }),
+      });
+    }).toThrow('Invalid colorspace: invalid-colorspace');
+  });
+
   it('should transform encycolorpedia colors by default', () => {
     const result = transform({
       filename: 'test.css',
@@ -389,6 +403,47 @@ describe('context-aware transformation', () => {
 
       expect(result.code.toString()).toContain('#4c2f27');
     });
+
+    it('should pass through standard CSS colors unchanged (fully parsed declarations)', () => {
+      const result = transform({
+        filename: 'test.css',
+        minify: true,
+        code: Buffer.from(`
+          .test {
+            color: red;
+            background-color: blue;
+            border-color: green;
+          }
+        `),
+        visitor: extendedNamedColorsPlugin(),
+      });
+
+      // Standard CSS colors are fully parsed by LightningCSS, not unparsed,
+      // so they pass through the handler unchanged
+      const output = result.code.toString();
+      expect(output).toContain('red');
+      expect(output).toContain('#00f'); // blue minified
+      expect(output).toContain('green');
+    });
+
+    it('should pass through unparsed color properties with no extended colors', () => {
+      const result = transform({
+        filename: 'test.css',
+        minify: true,
+        code: Buffer.from(`
+          .test {
+            color: var(--my-color);
+            background-color: var(--bg, fallback);
+          }
+        `),
+        visitor: extendedNamedColorsPlugin(),
+      });
+
+      // CSS variables create unparsed declarations but have no extended colors
+      const output = result.code.toString();
+      expect(output).toContain('var(--my-color)');
+      expect(output).toContain('var(--bg');
+    });
   });
 
   describe('custom properties', () => {
@@ -476,6 +531,51 @@ describe('context-aware transformation', () => {
       expect(output).toContain('--theme-color:#4c2f27');
       // --other-value should NOT be transformed (no @property)
       expect(output).toContain('--other-value:acajou');
+    });
+
+    it('should NOT transform custom properties with @property syntax: "*"', () => {
+      const result = transform({
+        filename: 'test.css',
+        minify: true,
+        code: Buffer.from(`
+          @property --my-value {
+            syntax: "*";
+            inherits: false;
+          }
+          :root {
+            --my-value: acajou;
+          }
+        `),
+        visitor: extendedNamedColorsPlugin(),
+      });
+
+      // Universal syntax "*" is not a color, should not be transformed
+      expect(result.code.toString()).toContain('acajou');
+      expect(result.code.toString()).not.toContain('#4c2f27');
+    });
+
+    it('should NOT transform custom property with color syntax but standard CSS color value', () => {
+      const result = transform({
+        filename: 'test.css',
+        minify: true,
+        code: Buffer.from(`
+          @property --theme-color {
+            syntax: "<color>";
+            inherits: false;
+            initial-value: black;
+          }
+          :root {
+            --theme-color: red;
+          }
+        `),
+        visitor: extendedNamedColorsPlugin(),
+      });
+
+      // Standard CSS color "red" is not an extended color, no transformation needed
+      const output = result.code.toString();
+      expect(output).toContain('--theme-color');
+      // Should not contain "acajou" or any extended color hex
+      expect(output).not.toContain('acajou');
     });
   });
 
