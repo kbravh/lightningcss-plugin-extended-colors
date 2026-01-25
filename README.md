@@ -72,6 +72,8 @@ assert.equal(res.code.toString(), '.foo{color:#ffb97b; background:#7a89b8}');
 
 If you pass more than one colorspace, they will be merged. In the case of color name collisions (for example, if the colorspaces `crayola` and `encycolorpedia` both contain a color named `macaroniandcheese`), the last colorspace will take precedence.
 
+> **Note:** Native CSS colors (like `red`, `blue`, `green`, etc.) always take precedence over extended colors. This is because LightningCSS parses standard CSS colors before this plugin processes them. If a color library defines a color with the same name as a native CSS color, the native color will be used instead.
+
 ### Custom Properties
 
 By default, CSS custom properties (variables) are **not** transformed. This is because custom properties can hold any value, and the plugin cannot determine whether a value is intended to be a color or something else (like an animation name or font family).
