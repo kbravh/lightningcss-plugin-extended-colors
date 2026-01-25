@@ -39,14 +39,12 @@
   },
   "scripts": {
     "build": "rslib build",
-    "check": "biome check --write",
-    "typecheck": "tsc --noEmit",
+    "check": "biome check && biome format && tsc --noEmit",
     "dev": "rslib build --watch",
-    "format": "biome format --write",
-    "lint": "biome check",
+    "fix": "biome check --write && biome format --write",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "prepublishOnly": "npm run lint && npm run build && npm test",
+    "prepublishOnly": "npm run check && npm run build && npm test",
     "upgrade": "npx npm-check-updates -i --format group"
   },
   "peerDependencies": {

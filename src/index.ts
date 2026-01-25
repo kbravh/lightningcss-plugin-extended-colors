@@ -4,6 +4,7 @@ import type {
   PropertyRule,
   Rule,
   TokenOrValue,
+  Visitor,
 } from 'lightningcss';
 import crayolaColors from './data/crayola.json';
 import encycolorpediaColors from './data/encycolorpedia.json';
@@ -136,7 +137,7 @@ function transformTokens(
  */
 export default function extendedNamedColorsPlugin(
   options: VisitorOptions = {},
-) {
+): Visitor<Record<string, never>> {
   // Default to encycolorpedia if no colorspaces are specified
   const colorspaces = options.colorspaces || ['encycolorpedia'];
   const colorMap = buildColorMap(colorspaces);
@@ -144,7 +145,6 @@ export default function extendedNamedColorsPlugin(
   // Track custom properties defined as colors via @property
   const colorCustomProperties = new Set<string>();
 
-  // Handler for unparsed declarations - shared by all color properties
   const handleUnparsedDeclaration = (decl: Declaration) => {
     if (decl.property === 'unparsed') {
       const transformedTokens = transformTokens(decl.value.value, colorMap);

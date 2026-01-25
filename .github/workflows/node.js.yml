@@ -19,8 +19,7 @@ jobs:
           node-version: 24
           cache: 'npm'
       - run: npm ci
-      - run: npx biome check
-      - run: npm run typecheck
+      - run: npm run check
 
   test:
     runs-on: ubuntu-latest
