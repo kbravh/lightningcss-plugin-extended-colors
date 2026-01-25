@@ -39,12 +39,12 @@
   },
   "scripts": {
     "build": "rslib build",
-    "check": "biome check --write",
+    "check": "biome check && biome format && tsc --noEmit",
     "dev": "rslib build --watch",
-    "format": "biome format --write",
-    "lint": "biome check",
+    "fix": "biome check --write && biome format --write",
     "test": "vitest run",
-    "prepublishOnly": "npm run lint && npm run build && npm test",
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "npm run check && npm run build && npm test",
     "upgrade": "npx npm-check-updates -i --format group"
   },
   "peerDependencies": {
@@ -54,6 +54,7 @@
     "@biomejs/biome": "^2.3.12",
     "@rslib/core": "^0.19.3",
     "@types/node": "^25.0.10",
+    "@vitest/coverage-v8": "^4.0.18",
     "lightningcss": "^1.31.1",
     "linkedom": "^0.18.12",
     "typescript": "^5.9.3",
