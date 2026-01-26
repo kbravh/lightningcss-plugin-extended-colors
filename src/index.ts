@@ -3,24 +3,20 @@ import type {
   Declaration,
   PropertyRule,
   Rule,
-  TokenOrValue,
   Visitor,
 } from 'lightningcss';
-import crayolaColors from './data/crayola.json';
-import encycolorpediaColors from './data/encycolorpedia.json';
-import legoColors from './data/lego.json';
 
-type Colorspace = 'encycolorpedia' | 'crayola' | 'lego';
+type ColorDefinition = string | string[];
 
-type VisitorOptions = {
-  colorspaces?: Colorspace[];
-};
+interface Colorspace {
+  [colorName: string]: ColorDefinition;
+}
 
-const colorspaceMap: Record<Colorspace, Record<string, string>> = {
-  encycolorpedia: encycolorpediaColors,
-  crayola: crayolaColors,
-  lego: legoColors,
-};
+interface PluginOptions {
+  colorspaces: Colorspace[];
+}
+
+export type { ColorDefinition, Colorspace, PluginOptions };
 
 /**
  * Checks if a @property rule defines a color syntax
@@ -75,110 +71,109 @@ const COLOR_PROPERTIES: string[] = [
 ];
 
 /**
- * Builds a color map from the specified colorspaces
- * In case of color naming conflicts, later colorspaces take precedence
+ * Builds a color map from the specified colorspaces.
+ * In case of color naming conflicts, later colorspaces take precedence.
  */
-function buildColorMap(colorspaces: Colorspace[]): Record<string, string> {
-  let colorMap: Record<string, string> = {};
+function buildColorMap(
+  colorspaces: Colorspace[],
+): Record<string, ColorDefinition> {
+  let colorMap: Record<string, ColorDefinition> = {};
 
   for (const colorspace of colorspaces) {
-    if (!Object.keys(colorspaceMap).includes(colorspace)) {
-      throw new Error(`Invalid colorspace: ${colorspace}`);
-    }
-
-    colorMap = { ...colorMap, ...colorspaceMap[colorspace] };
+    colorMap = { ...colorMap, ...colorspace };
   }
 
   return colorMap;
 }
 
 /**
- * Transforms extended color names in a list of tokens.
- * Returns a modified TokenOrValue array with color idents replaced by hash tokens,
- * or null if no changes were made.
- *
- * For unparsed declarations, LightningCSS stores values as TokenOrValue[].
- * We iterate through looking for ident tokens that match our color names,
- * and replace them with hash tokens. LightningCSS handles serialization.
+ * Finds an extended color ident in unparsed token values.
+ * Returns the color name if a single ident token matches, otherwise null.
  */
-function transformTokens(
-  tokens: TokenOrValue[],
-  colorMap: Record<string, string>,
-): TokenOrValue[] | null {
-  let hasChanges = false;
-  const result: TokenOrValue[] = [];
-
+function findColorIdent(
+  tokens: { type: string; value: unknown }[],
+  colorMap: Record<string, ColorDefinition>,
+): string | null {
   for (const tokenOrValue of tokens) {
     if (tokenOrValue.type === 'token') {
-      const token = tokenOrValue.value;
-      // Check if this ident is one of our extended color names
-      if (token.type === 'ident') {
-        const hexColor = colorMap[token.value];
-        if (hexColor) {
-          // Replace ident with hash token (remove # prefix for hash token value)
-          result.push({
-            type: 'token',
-            value: { type: 'hash', value: hexColor.slice(1) },
-          } as TokenOrValue);
-          hasChanges = true;
-          continue;
-        }
+      const token = tokenOrValue.value as { type: string; value: string };
+      if (token.type === 'ident' && colorMap[token.value]) {
+        return token.value;
       }
     }
-    // Keep token unchanged
-    result.push(tokenOrValue);
   }
-
-  return hasChanges ? result : null;
+  return null;
 }
 
 /**
- * Creates a LightningCSS plugin that adds support for extended named colors
+ * Creates a raw declaration for a given property and CSS value string.
  */
-export default function extendedNamedColorsPlugin(
-  options: VisitorOptions = {},
+function makeRawDeclaration(property: string, raw: string): Declaration {
+  return { property, raw } as unknown as Declaration;
+}
+
+/**
+ * Creates a LightningCSS plugin that adds support for extended named colors.
+ */
+export default function extendedColorsVisitor(
+  options: PluginOptions,
 ): Visitor<Record<string, never>> {
-  // Default to encycolorpedia if no colorspaces are specified
-  const colorspaces = options.colorspaces || ['encycolorpedia'];
-  const colorMap = buildColorMap(colorspaces);
+  const colorMap = buildColorMap(options.colorspaces);
 
   // Track custom properties defined as colors via @property
   const colorCustomProperties = new Set<string>();
 
-  const handleUnparsedDeclaration = (decl: Declaration) => {
-    if (decl.property === 'unparsed') {
-      const transformedTokens = transformTokens(decl.value.value, colorMap);
-      if (transformedTokens) {
-        return {
-          property: 'unparsed',
-          value: {
-            propertyId: decl.value.propertyId,
-            value: transformedTokens,
-          },
-        } as Declaration;
-      }
+  const handleUnparsedDeclaration = (
+    decl: Declaration,
+  ): Declaration | Declaration[] | undefined => {
+    if (decl.property !== 'unparsed') {
+      return undefined;
     }
-    return undefined;
+
+    const unparsed = decl.value as {
+      propertyId: { property: string };
+      value: { type: string; value: unknown }[];
+    };
+    const propertyName = unparsed.propertyId.property;
+
+    const colorName = findColorIdent(unparsed.value, colorMap);
+    if (!colorName) {
+      return undefined;
+    }
+
+    const colorValue = colorMap[colorName];
+
+    // Single string value: return one raw declaration
+    if (typeof colorValue === 'string') {
+      return makeRawDeclaration(propertyName, colorValue);
+    }
+
+    // Array: return multiple declarations (fallback first, modern last)
+    return colorValue.map((value) => makeRawDeclaration(propertyName, value));
   };
 
   // Handler for custom properties
-  const handleCustomProperty = (decl: CustomProperty) => {
+  const handleCustomProperty = (
+    decl: CustomProperty,
+  ): Declaration | Declaration[] | undefined => {
     // Only transform if this property was defined as a color via @property
     if (!colorCustomProperties.has(decl.name)) {
       return undefined;
     }
 
-    const transformedTokens = transformTokens(decl.value, colorMap);
-    if (transformedTokens) {
-      return {
-        property: 'custom',
-        value: {
-          name: decl.name,
-          value: transformedTokens,
-        },
-      } as Declaration;
+    const tokens = decl.value as { type: string; value: unknown }[];
+    const colorName = findColorIdent(tokens, colorMap);
+    if (!colorName) {
+      return undefined;
     }
-    return undefined;
+
+    const colorValue = colorMap[colorName];
+
+    if (typeof colorValue === 'string') {
+      return makeRawDeclaration(decl.name, colorValue);
+    }
+
+    return colorValue.map((value) => makeRawDeclaration(decl.name, value));
   };
 
   // Build declaration visitors - all color properties share the same handler
