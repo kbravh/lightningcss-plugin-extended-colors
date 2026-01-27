@@ -1,7 +1,7 @@
 # @lightningcss-plugin-extended-colors/crayola
 
-## 2.0.0
+## 1.0.0
 
 ### Major Changes
 
-- [#5](https://github.com/kbravh/lightningcss-plugin-extended-colors/pull/5) [`5826932`](https://github.com/kbravh/lightningcss-plugin-extended-colors/commit/58269325624b8c2d8c6fe31ba382eb660d9f3f05) Thanks [@kbravh](https://github.com/kbravh)! - Colormaps have been split into separate packages. The core plugin can now accept custom colormaps.
+- [#5](https://github.com/kbravh/lightningcss-plugin-extended-colors/pull/5) [`5826932`](https://github.com/kbravh/lightningcss-plugin-extended-colors/commit/58269325624b8c2d8c6fe31ba382eb660d9f3f05) Thanks [@kbravh](https://github.com/kbravh)! - Initial release. Crayola colormap split into its own package.

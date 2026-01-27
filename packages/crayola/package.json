@@ -2,7 +2,7 @@
   "name": "@lightningcss-plugin-extended-colors/crayola",
   "description": "Crayola color definitions for lightningcss-plugin-extended-colors",
   "author": "Karey Higuera <kbravh>",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "license": "MIT",
   "type": "module",
   "exports": {
