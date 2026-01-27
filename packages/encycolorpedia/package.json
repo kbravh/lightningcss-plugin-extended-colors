@@ -2,7 +2,7 @@
   "name": "@lightningcss-plugin-extended-colors/encycolorpedia",
   "description": "Encycolorpedia color definitions for lightningcss-plugin-extended-colors",
   "author": "Karey Higuera <kbravh>",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "type": "module",
   "exports": {
