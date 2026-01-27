@@ -1,60 +1,35 @@
 # LightningCSS Plugin Extended Colors
 
 ## Overview
-Every get tired of CSS having such a limited set of named colors? Well not anymore!
+
+Ever get tired of CSS having such a limited set of named colors? Well not anymore!
 
 Have fun styling your pages with any color from `acajou` to `zomp`.
 
 ## Installation
-Install the plugin with `npm`:
+
+Install the core plugin and one or more colorspace packages:
 
 ```bash
 npm install lightningcss-plugin-extended-colors
+
+# Install one or more colorspace packages:
+npm install @lightningcss-plugin-extended-colors/crayola
+npm install @lightningcss-plugin-extended-colors/encycolorpedia
+npm install @lightningcss-plugin-extended-colors/lego
 ```
 
 ## Usage
 
-Once installed, you can include it as a [`lightningcss` plugin](https://lightningcss.dev/transforms.html#using-plugins):
+Import the plugin and a colorspace, then pass the colorspace as an object to the `colorspaces` option:
 
 ```ts
 import { transform, composeVisitors } from 'lightningcss';
 import extendedColorsVisitor from 'lightningcss-plugin-extended-colors';
+import crayola from '@lightningcss-plugin-extended-colors/crayola';
 
 let res = transform({
-    filename: 'test.css',
-  minify: true,
-  code: Buffer.from(`
-    .foo {
-      color: acajou;
-      background: zomp;
-    }
-  `),
-  visitor: composeVisitors([
-    extendedColorsVisitor
-  ])
-});
-
-assert.equal(res.code.toString(), '.foo{color:#4c2f27; background:#39a78e}');
-```
-
-### Colorspaces
-
-To see all available colors, please see the respective doc for each colorspace:
-
-| Colorspace | Colors |
-| --- | --- |
-| `crayola` | [169 named colors](./docs/crayola-colors.md) |
-| `encycolorpedia` | [1489 named colors](./docs/encycolorpedia-colors.md) |
-| `lego` | [265 named colors](./docs/lego-colors.md) |
-
-By default, the plugin will use the `encycolorpedia` colorspace. You can specify other colorspaces by passing an array of colorspace names to the `colorspaces` option:
-
-```ts
-import { transform, composeVisitors } from 'lightningcss';
-import extendedColorsVisitor from 'lightningcss-plugin-extended-colors';
-
-let res = transform({
-    filename: 'test.css',
+  filename: 'test.css',
   minify: true,
   code: Buffer.from(`
     .foo {
@@ -63,16 +38,72 @@ let res = transform({
     }
   `),
   visitor: composeVisitors([
-    extendedColorsVisitor({ colorspaces: ['crayola'] })
+    extendedColorsVisitor({ colorspaces: [crayola] })
   ])
 });
 
-assert.equal(res.code.toString(), '.foo{color:#ffb97b; background:#7a89b8}');
+assert.equal(res.code.toString(), '.foo{color:#ffb97b;background:#7a89b8}');
 ```
 
-If you pass more than one colorspace, they will be merged. In the case of color name collisions (for example, if the colorspaces `crayola` and `encycolorpedia` both contain a color named `macaroniandcheese`), the last colorspace will take precedence.
+### Colorspaces
 
-> **Note:** Native CSS colors (like `red`, `blue`, `green`, etc.) always take precedence over extended colors. This is because LightningCSS parses standard CSS colors before this plugin processes them. If a color library defines a color with the same name as a native CSS color, the native color will be used instead.
+To see all available colors, please see the respective doc for each colorspace:
+
+| Colorspace | Package | Colors |
+| --- | --- | --- |
+| Crayola | `@lightningcss-plugin-extended-colors/crayola` | [169 named colors](./docs/crayola-colors.md) |
+| Encycolorpedia | `@lightningcss-plugin-extended-colors/encycolorpedia` | [1489 named colors](./docs/encycolorpedia-colors.md) |
+| Lego | `@lightningcss-plugin-extended-colors/lego` | [265 named colors](./docs/lego-colors.md) |
+
+### Custom Colorspaces
+
+You can define your own colorspace as a plain object mapping color names to CSS values:
+
+```ts
+import extendedColorsVisitor from 'lightningcss-plugin-extended-colors';
+
+const brandColors = {
+  "primary": "#0066ff",
+  "secondary": "#ff6600",
+};
+
+extendedColorsVisitor({ colorspaces: [brandColors] });
+```
+
+### Color Fallbacks (Arrays)
+
+Color values can be arrays to provide fallback declarations for older browsers:
+
+```ts
+const brandColors = {
+  "primary": ["#0066ff", "oklch(0.6 0.2 250)"],
+};
+```
+
+This produces multiple declarations with the fallback first and the modern value last:
+
+```css
+.test {
+  color: #0066ff;
+  color: oklch(0.6 0.2 250);
+}
+```
+
+> **Note:** LightningCSS deduplicates same-property declarations based on `targets`. Without `targets`, it assumes modern browsers and keeps only the last (most modern) value. Set `targets` to older browsers to preserve fallback declarations.
+
+### Mixing Colorspaces
+
+You can pass multiple colorspaces. They are merged in order, so later colorspaces take precedence in case of name collisions:
+
+```ts
+import encycolorpedia from '@lightningcss-plugin-extended-colors/encycolorpedia';
+import crayola from '@lightningcss-plugin-extended-colors/crayola';
+
+extendedColorsVisitor({
+  colorspaces: [encycolorpedia, crayola]
+});
+// If both define "wisteria", crayola's value wins.
+```
 
 ### Custom Properties
 
@@ -104,12 +135,17 @@ To enable transformation for custom properties, use the CSS `@property` rule to 
 
 This approach ensures that only custom properties explicitly defined as colors will have their values transformed, while other custom properties remain unchanged.
 
+### Note on Native CSS Colors
+
+Native CSS colors (like `red`, `blue`, `green`, etc.) always take precedence over extended colors. This is because LightningCSS parses standard CSS colors before this plugin processes them. If a color library defines a color with the same name as a native CSS color, the native color will be used instead.
+
 ## Contributing
 
 Build the library:
 
 ```bash
-npm run build
+npm run build --workspaces  # Build colorspace packages
+npm run build               # Build core plugin
 ```
 
 Build the library in watch mode:
@@ -118,11 +154,25 @@ Build the library in watch mode:
 npm run dev
 ```
 
+Run tests:
+
+```bash
+npm test
+```
+
+### Adding a Changeset
+
+Before opening a PR, run `npx changeset` to describe your changes. This creates a markdown file in `.changeset/` that tracks which packages changed and what kind of version bump is needed. The CI will handle versioning and publishing after merge.
+
 ### Project Structure
 
-- `src/` - Source code for the plugin
-  - `src/data/` - Data files used by the plugin, including the extended color definitions
-  - `src/index.ts` - Main plugin entry point
+```
+├── src/index.ts              # Core plugin
+├── packages/
+│   ├── crayola/              # @lightningcss-plugin-extended-colors/crayola
+│   ├── encycolorpedia/       # @lightningcss-plugin-extended-colors/encycolorpedia
+│   └── lego/                 # @lightningcss-plugin-extended-colors/lego
+```
 
 ## Color Charts
 

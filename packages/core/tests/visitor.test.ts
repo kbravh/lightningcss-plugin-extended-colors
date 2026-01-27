@@ -1,23 +1,12 @@
+import crayolaColors from '@lightningcss-plugin-extended-colors/crayola';
+import encycolorpediaColors from '@lightningcss-plugin-extended-colors/encycolorpedia';
+import legoColors from '@lightningcss-plugin-extended-colors/lego';
 import { transform } from 'lightningcss';
 import { describe, expect, it } from 'vitest';
-import extendedNamedColorsPlugin from '../src/index';
+import extendedColorsVisitor from '../src/index';
 
-describe('extendedNamedColorsPlugin', () => {
-  it('should throw an error for invalid colorspace', () => {
-    expect(() => {
-      transform({
-        filename: 'test.css',
-        minify: true,
-        code: Buffer.from('.test { color: red; }'),
-        // @ts-expect-error testing invalid colorspace
-        visitor: extendedNamedColorsPlugin({
-          colorspaces: ['invalid-colorspace'],
-        }),
-      });
-    }).toThrow('Invalid colorspace: invalid-colorspace');
-  });
-
-  it('should transform encycolorpedia colors by default', () => {
+describe('extendedColorsVisitor', () => {
+  it('should transform encycolorpedia colors', () => {
     const result = transform({
       filename: 'test.css',
       minify: true,
@@ -27,13 +16,14 @@ describe('extendedNamedColorsPlugin', () => {
           background: zomp;
         }
       `),
-      visitor: extendedNamedColorsPlugin(),
+      visitor: extendedColorsVisitor({ colorspaces: [encycolorpediaColors] }),
     });
 
     expect(result.code.toString()).toEqual(
       '.test{color:#4c2f27;background:#39a78e}',
     );
   });
+
   it('should transform crayola colors', () => {
     const result = transform({
       filename: 'test.css',
@@ -44,13 +34,14 @@ describe('extendedNamedColorsPlugin', () => {
           background: wildblueyonder;
         }
       `),
-      visitor: extendedNamedColorsPlugin({ colorspaces: ['crayola'] }),
+      visitor: extendedColorsVisitor({ colorspaces: [crayolaColors] }),
     });
 
     expect(result.code.toString()).toEqual(
       '.test{color:#ffb97b;background:#7a89b8}',
     );
   });
+
   it('should transform lego colors', () => {
     const result = transform({
       filename: 'test.css',
@@ -61,14 +52,15 @@ describe('extendedNamedColorsPlugin', () => {
           background: pearlred;
         }
       `),
-      visitor: extendedNamedColorsPlugin({ colorspaces: ['lego'] }),
+      visitor: extendedColorsVisitor({ colorspaces: [legoColors] }),
     });
 
     expect(result.code.toString()).toEqual(
       '.test{color:#bd7d85;background:#d60026}',
     );
   });
-  it('should respect the colorspace order', () => {
+
+  it('should respect the colorspace order (later wins)', () => {
     const result = transform({
       filename: 'test.css',
       minify: true,
@@ -78,14 +70,211 @@ describe('extendedNamedColorsPlugin', () => {
           background: wisteria;  /* Encycolorpedia: #89729e, Crayola: #c9a0dc */
         }
       `),
-      visitor: extendedNamedColorsPlugin({
-        colorspaces: ['encycolorpedia', 'crayola'],
+      visitor: extendedColorsVisitor({
+        colorspaces: [encycolorpediaColors, crayolaColors],
       }),
     });
 
     expect(result.code.toString()).toEqual(
       '.test{color:#926f5b;background:#c9a0dc}',
     );
+  });
+});
+
+describe('custom colorspaces', () => {
+  it('should support a custom colorspace object', () => {
+    const myColors = {
+      'brand-red': '#ff0000',
+      'brand-blue': '#0000ff',
+    };
+
+    const result = transform({
+      filename: 'test.css',
+      minify: true,
+      code: Buffer.from(`
+        .test {
+          color: brand-red;
+          background-color: brand-blue;
+        }
+      `),
+      visitor: extendedColorsVisitor({ colorspaces: [myColors] }),
+    });
+
+    expect(result.code.toString()).toEqual(
+      '.test{color:red;background-color:#00f}',
+    );
+  });
+
+  it('should support mixing built-in and custom colorspaces', () => {
+    const myColors = {
+      primary: '#0066ff',
+    };
+
+    const result = transform({
+      filename: 'test.css',
+      minify: true,
+      code: Buffer.from(`
+        .test {
+          color: primary;
+          background-color: acajou;
+        }
+      `),
+      visitor: extendedColorsVisitor({
+        colorspaces: [encycolorpediaColors, myColors],
+      }),
+    });
+
+    expect(result.code.toString()).toEqual(
+      '.test{color:#06f;background-color:#4c2f27}',
+    );
+  });
+
+  it('should allow custom colorspace to override built-in colors', () => {
+    const overrides = {
+      acajou: '#111111',
+    };
+
+    const result = transform({
+      filename: 'test.css',
+      minify: true,
+      code: Buffer.from(`
+        .test {
+          color: acajou;
+        }
+      `),
+      visitor: extendedColorsVisitor({
+        colorspaces: [encycolorpediaColors, overrides],
+      }),
+    });
+
+    expect(result.code.toString()).toEqual('.test{color:#111}');
+  });
+});
+
+describe('multi-format color values (arrays)', () => {
+  // LightningCSS deduplicates same-property declarations when it knows the
+  // target browsers support the modern value. Setting older browser targets
+  // ensures fallback declarations are preserved.
+  const targets = { chrome: 50 << 16 };
+
+  it('should output multiple declarations for array values', () => {
+    const myColors = {
+      fancy: ['#0066ff', 'oklch(0.6 0.2 250)'],
+    };
+
+    const result = transform({
+      filename: 'test.css',
+      minify: false,
+      targets,
+      code: Buffer.from(`
+        .test {
+          color: fancy;
+        }
+      `),
+      visitor: extendedColorsVisitor({ colorspaces: [myColors] }),
+    });
+
+    const output = result.code.toString();
+    // LightningCSS normalizes hex (#0066ff → #06f) and oklch values
+    expect(output).toContain('color: #06f');
+    expect(output).toContain('color: oklch(');
+  });
+
+  it('should output fallback first, modern last', () => {
+    const myColors = {
+      fancy: ['#0066ff', 'oklch(0.6 0.2 250)'],
+    };
+
+    const result = transform({
+      filename: 'test.css',
+      minify: true,
+      targets,
+      code: Buffer.from(`
+        .test {
+          color: fancy;
+        }
+      `),
+      visitor: extendedColorsVisitor({ colorspaces: [myColors] }),
+    });
+
+    const output = result.code.toString();
+    // Both values should appear, fallback before modern
+    const fallbackIndex = output.indexOf('#06f');
+    const modernIndex = output.indexOf('oklch');
+    expect(fallbackIndex).toBeGreaterThan(-1);
+    expect(modernIndex).toBeGreaterThan(-1);
+    expect(fallbackIndex).toBeLessThan(modernIndex);
+  });
+
+  it('should handle single-string values alongside array values', () => {
+    const myColors = {
+      simple: '#ff0000',
+      fancy: ['#0066ff', 'oklch(0.6 0.2 250)'],
+    };
+
+    const result = transform({
+      filename: 'test.css',
+      minify: true,
+      targets,
+      code: Buffer.from(`
+        .test {
+          color: simple;
+          background-color: fancy;
+        }
+      `),
+      visitor: extendedColorsVisitor({ colorspaces: [myColors] }),
+    });
+
+    const output = result.code.toString();
+    expect(output).toContain('color:red');
+    expect(output).toContain('background-color:#06f');
+    expect(output).toContain('background-color:oklch(');
+  });
+
+  it('should support non-hex CSS color formats', () => {
+    const myColors = {
+      themed: 'oklch(0.63 0.26 29)',
+    };
+
+    const result = transform({
+      filename: 'test.css',
+      minify: false,
+      targets,
+      code: Buffer.from(`
+        .test {
+          color: themed;
+        }
+      `),
+      visitor: extendedColorsVisitor({ colorspaces: [myColors] }),
+    });
+
+    const output = result.code.toString();
+    // LightningCSS parses and re-serializes the raw value
+    expect(output).toContain('color:');
+    expect(output).not.toContain('themed');
+  });
+
+  it('should deduplicate fallbacks when targets support modern syntax', () => {
+    const myColors = {
+      fancy: ['#0066ff', 'oklch(0.6 0.2 250)'],
+    };
+
+    // Without targets, LightningCSS assumes modern browsers and removes fallbacks
+    const result = transform({
+      filename: 'test.css',
+      minify: false,
+      code: Buffer.from(`
+        .test {
+          color: fancy;
+        }
+      `),
+      visitor: extendedColorsVisitor({ colorspaces: [myColors] }),
+    });
+
+    const output = result.code.toString();
+    // Only the modern value should remain (LightningCSS deduplicates)
+    expect(output).toContain('oklch(');
+    expect(output).not.toContain('#06f');
   });
 });
 
@@ -100,7 +289,9 @@ describe('context-aware transformation', () => {
             animation: acajou 2s ease-in-out;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       // Animation name "acajou" should be preserved, not converted to #4c2f27
@@ -117,7 +308,9 @@ describe('context-aware transformation', () => {
             animation-name: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('acajou');
@@ -134,7 +327,9 @@ describe('context-aware transformation', () => {
             100% { opacity: 1; }
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       // Keyframe name should be preserved
@@ -150,7 +345,9 @@ describe('context-aware transformation', () => {
             counter-reset: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('acajou');
@@ -166,7 +363,9 @@ describe('context-aware transformation', () => {
             counter-increment: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('acajou');
@@ -182,7 +381,9 @@ describe('context-aware transformation', () => {
             font-family: acajou, sans-serif;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('acajou');
@@ -198,7 +399,9 @@ describe('context-aware transformation', () => {
             grid-area: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('acajou');
@@ -214,7 +417,9 @@ describe('context-aware transformation', () => {
             will-change: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('acajou');
@@ -232,7 +437,9 @@ describe('context-aware transformation', () => {
             background: acajou url(bg.png) no-repeat;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('#4c2f27');
@@ -248,7 +455,9 @@ describe('context-aware transformation', () => {
             border: 1px solid acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('#4c2f27');
@@ -263,7 +472,9 @@ describe('context-aware transformation', () => {
             outline: 2px dashed acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('#4c2f27');
@@ -278,7 +489,9 @@ describe('context-aware transformation', () => {
             box-shadow: 2px 2px 4px acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('#4c2f27');
@@ -293,7 +506,9 @@ describe('context-aware transformation', () => {
             text-shadow: 1px 1px 2px acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('#4c2f27');
@@ -308,7 +523,9 @@ describe('context-aware transformation', () => {
             border-color: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('#4c2f27');
@@ -323,7 +540,9 @@ describe('context-aware transformation', () => {
             outline-color: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('#4c2f27');
@@ -338,7 +557,9 @@ describe('context-aware transformation', () => {
             text-decoration-color: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('#4c2f27');
@@ -353,7 +574,9 @@ describe('context-aware transformation', () => {
             caret-color: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('#4c2f27');
@@ -368,7 +591,9 @@ describe('context-aware transformation', () => {
             accent-color: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('#4c2f27');
@@ -383,7 +608,9 @@ describe('context-aware transformation', () => {
             fill: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('#4c2f27');
@@ -398,7 +625,9 @@ describe('context-aware transformation', () => {
             stroke: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       expect(result.code.toString()).toContain('#4c2f27');
@@ -415,7 +644,9 @@ describe('context-aware transformation', () => {
             border-color: green;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       // Standard CSS colors are fully parsed by LightningCSS, not unparsed,
@@ -436,7 +667,9 @@ describe('context-aware transformation', () => {
             background-color: var(--bg, fallback);
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       // CSS variables create unparsed declarations but have no extended colors
@@ -456,7 +689,9 @@ describe('context-aware transformation', () => {
             --my-color: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       // Custom properties without @property are not transformed
@@ -478,7 +713,9 @@ describe('context-aware transformation', () => {
             --my-color: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       // With @property defining it as a color, it should be transformed
@@ -500,7 +737,9 @@ describe('context-aware transformation', () => {
             --my-ident: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       // Not a color syntax, so should not be transformed
@@ -523,7 +762,9 @@ describe('context-aware transformation', () => {
             --other-value: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       const output = result.code.toString();
@@ -546,7 +787,9 @@ describe('context-aware transformation', () => {
             --my-value: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       // Universal syntax "*" is not a color, should not be transformed
@@ -568,7 +811,9 @@ describe('context-aware transformation', () => {
             --theme-color: red;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       // Standard CSS color "red" is not an extended color, no transformation needed
@@ -576,6 +821,33 @@ describe('context-aware transformation', () => {
       expect(output).toContain('--theme-color');
       // Should not contain "acajou" or any extended color hex
       expect(output).not.toContain('acajou');
+    });
+
+    it('should transform array color values in custom properties with @property', () => {
+      const myColors = {
+        fancy: ['#0066ff', 'oklch(0.6 0.2 250)'],
+      };
+
+      const result = transform({
+        filename: 'test.css',
+        minify: true,
+        targets: { chrome: 50 << 16 },
+        code: Buffer.from(`
+          @property --my-color {
+            syntax: "<color>";
+            inherits: false;
+            initial-value: black;
+          }
+          :root {
+            --my-color: fancy;
+          }
+        `),
+        visitor: extendedColorsVisitor({ colorspaces: [myColors] }),
+      });
+
+      const output = result.code.toString();
+      expect(output).toContain('--my-color:');
+      expect(output).not.toContain('fancy');
     });
   });
 
@@ -590,7 +862,9 @@ describe('context-aware transformation', () => {
             color: acajou;
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       const output = result.code.toString();
@@ -610,7 +884,9 @@ describe('context-aware transformation', () => {
             100% { color: zomp; }
           }
         `),
-        visitor: extendedNamedColorsPlugin(),
+        visitor: extendedColorsVisitor({
+          colorspaces: [encycolorpediaColors],
+        }),
       });
 
       const output = result.code.toString();

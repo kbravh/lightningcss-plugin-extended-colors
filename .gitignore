@@ -6,6 +6,10 @@
 # Dist
 node_modules
 dist/
+*.tsbuildinfo
+
+# Turbo
+.turbo
 
 # Coverage
 coverage/

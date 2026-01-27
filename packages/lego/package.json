@@ -1,0 +1,45 @@
+{
+  "name": "@lightningcss-plugin-extended-colors/lego",
+  "description": "LEGO color definitions for lightningcss-plugin-extended-colors",
+  "author": "Karey Higuera <kbravh>",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kbravh/lightningcss-plugin-extended-colors.git",
+    "directory": "packages/lego"
+  },
+  "bugs": {
+    "url": "https://github.com/kbravh/lightningcss-plugin-extended-colors/issues"
+  },
+  "homepage": "https://github.com/kbravh/lightningcss-plugin-extended-colors#readme",
+  "keywords": [
+    "lightningcss",
+    "css",
+    "colors",
+    "lego"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "rslib build"
+  },
+  "devDependencies": {
+    "@rslib/core": "^0.19.3",
+    "typescript": "^5.9.3"
+  }
+}
