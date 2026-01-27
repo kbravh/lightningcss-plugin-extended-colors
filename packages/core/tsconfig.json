@@ -1,15 +1,4 @@
 {
-  "compilerOptions": {
-    "lib": ["ESNext"],
-    "module": "ESNext",
-    "noEmit": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "isolatedModules": true,
-    "resolveJsonModule": true,
-    "moduleResolution": "bundler",
-    "useDefineForClassFields": true,
-    "allowImportingTsExtensions": true
-  },
-  "include": ["src"]
+  "extends": "../../tsconfig.json",
+  "include": ["src", "tests"]
 }
