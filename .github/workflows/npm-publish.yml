@@ -18,7 +18,6 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org/
       - run: npm ci
-      - run: npm run build --workspaces
       - run: npm run build
       - run: npm test
       - run: npx biome check
@@ -26,6 +25,7 @@ jobs:
         uses: changesets/action@v1
         with:
           publish: npx changeset publish
+          createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

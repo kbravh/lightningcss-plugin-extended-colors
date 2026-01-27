@@ -11,5 +11,5 @@
     "useDefineForClassFields": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["packages/*/src", "packages/*/tests"]
+  "include": ["src"]
 }

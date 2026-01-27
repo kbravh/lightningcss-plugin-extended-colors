@@ -1,23 +1,13 @@
 {
-  "name": "lightningcss-plugin-extended-colors",
-  "description": "LightningCSS plugin that adds support for more named colors (Crayola, Encycolorpedia, Pantone, etc.)",
+  "name": "lightningcss-plugin-extended-colors-monorepo",
+  "private": true,
+  "description": "LightningCSS plugin that adds support for more named colors",
   "author": "Karey Higuera <kbravh>",
-  "version": "2.0.0",
+  "version": "0.0.0",
   "license": "MIT",
   "type": "module",
   "workspaces": [
     "packages/*"
-  ],
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist"
   ],
   "repository": {
     "type": "git",
@@ -27,37 +17,23 @@
     "url": "https://github.com/kbravh/lightningcss-plugin-extended-colors/issues"
   },
   "homepage": "https://github.com/kbravh/lightningcss-plugin-extended-colors#readme",
-  "keywords": [
-    "lightningcss",
-    "lightningcss-plugin",
-    "css",
-    "colors",
-    "named-colors",
-    "crayola",
-    "encycolorpedia",
-    "lego"
-  ],
   "engines": {
     "node": ">=20.0.0"
   },
   "scripts": {
-    "build": "rslib build",
+    "build": "npm run build --workspaces",
     "check": "biome check && biome format && tsc --noEmit",
-    "dev": "rslib build --watch",
     "fix": "biome check --write && biome format --write",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "prepublishOnly": "npm run check && npm run build && npm test",
+    "test": "npm run test --workspace=lightningcss-plugin-extended-colors",
+    "test:coverage": "npm run test:coverage --workspace=lightningcss-plugin-extended-colors",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "npm run build --workspaces && npm run build && changeset publish",
+    "release": "npm run build && changeset publish",
     "upgrade": "npx npm-check-updates -i --format group"
-  },
-  "peerDependencies": {
-    "lightningcss": "^1.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.13",
+    "@changesets/changelog-github": "^0.5.2",
     "@changesets/cli": "^2.29.8",
     "@rslib/core": "^0.19.3",
     "@types/node": "^25.0.10",
