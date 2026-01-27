@@ -2,7 +2,7 @@
   "name": "lightningcss-plugin-extended-colors",
   "description": "LightningCSS plugin that adds support for more named colors (Crayola, Encycolorpedia, Pantone, etc.)",
   "author": "Karey Higuera <kbravh>",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "license": "MIT",
   "type": "module",
   "exports": {
@@ -45,9 +45,9 @@
     "lightningcss": "^1.0.0"
   },
   "devDependencies": {
-    "@lightningcss-plugin-extended-colors/crayola": "^1.0.0",
-    "@lightningcss-plugin-extended-colors/encycolorpedia": "^1.0.0",
-    "@lightningcss-plugin-extended-colors/lego": "^1.0.0",
+    "@lightningcss-plugin-extended-colors/crayola": "^2.0.0",
+    "@lightningcss-plugin-extended-colors/encycolorpedia": "^2.0.0",
+    "@lightningcss-plugin-extended-colors/lego": "^2.0.0",
     "@rslib/core": "^0.19.3",
     "@types/node": "^25.0.10",
     "@vitest/coverage-v8": "^4.0.18",
