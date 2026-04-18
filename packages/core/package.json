@@ -48,11 +48,11 @@
     "@lightningcss-plugin-extended-colors/crayola": "^1.0.0",
     "@lightningcss-plugin-extended-colors/encycolorpedia": "^1.0.0",
     "@lightningcss-plugin-extended-colors/lego": "^1.0.0",
-    "@rslib/core": "^0.21.0",
+    "@rslib/core": "^0.21.2",
     "@types/node": "^25.6.0",
     "@vitest/coverage-v8": "^4.1.4",
     "lightningcss": "^1.31.1",
-    "typescript": "^6.0.2",
+    "typescript": "^6.0.3",
     "vitest": "^4.0.18"
   }
 }
