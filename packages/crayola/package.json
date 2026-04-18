@@ -42,7 +42,7 @@
     "build": "rslib build"
   },
   "devDependencies": {
-    "@rslib/core": "^0.21.0",
-    "typescript": "^6.0.2"
+    "@rslib/core": "^0.21.2",
+    "typescript": "^6.0.3"
   }
 }
