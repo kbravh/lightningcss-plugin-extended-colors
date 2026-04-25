@@ -36,12 +36,12 @@
     "upgrade": "npx npm-check-updates -i --format group"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.12",
+    "@biomejs/biome": "^2.4.13",
     "@changesets/changelog-github": "^0.6.0",
     "@changesets/cli": "^2.31.0",
-    "@rslib/core": "^0.21.2",
+    "@rslib/core": "^0.21.3",
     "@types/node": "^25.6.0",
-    "@vitest/coverage-v8": "^4.1.4",
+    "@vitest/coverage-v8": "^4.1.5",
     "lightningcss": "^1.31.1",
     "linkedom": "^0.18.12",
     "turbo": "^2.9.6",
