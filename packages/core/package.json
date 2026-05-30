@@ -48,7 +48,7 @@
     "@lightningcss-plugin-extended-colors/crayola": "^1.0.0",
     "@lightningcss-plugin-extended-colors/encycolorpedia": "^1.0.0",
     "@lightningcss-plugin-extended-colors/lego": "^1.0.0",
-    "@rslib/core": "^0.21.5",
+    "@rslib/core": "^0.22.0",
     "@types/node": "^25.9.1",
     "@vitest/coverage-v8": "^4.1.7",
     "lightningcss": "^1.31.1",
