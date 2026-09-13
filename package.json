@@ -36,16 +36,16 @@
     "upgrade": "npx npm-check-updates -i --format group"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.11",
-    "@changesets/changelog-github": "^1.0.0",
-    "@changesets/cli": "^3.0.1",
-    "@rslib/core": "^0.23.2",
-    "@types/node": "^26.4.1",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@biomejs/biome": "^2.5.12",
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.2",
+    "@rslib/core": "^1.0.0",
+    "@types/node": "^26.5.0",
+    "@vitest/coverage-v8": "^5.0.0",
     "lightningcss": "^1.33.0",
     "linkedom": "^0.18.13",
     "turbo": "^2.10.12",
     "typescript": "^7.0.2",
-    "vitest": "^4.0.18"
+    "vitest": "^5.0.0"
   }
 }
